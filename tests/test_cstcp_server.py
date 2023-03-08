@@ -14,6 +14,7 @@
 #
 # Copyright Owner: Zeeland
 # GitHub Link: https://github.com/Undertone0809/
+# Project Link: https://github.com/Undertone0809/cushy-socket
 # Contact Email: zeeland@foxmail.com
 
 import time
@@ -23,7 +24,7 @@ import unittest
 import threading
 import warnings
 
-from cushy_socket.tcp import CSTCPServer
+from cushy_socket.tcp import CushyTCPServer
 
 
 class TestCSTCPServer(unittest.TestCase):
@@ -31,14 +32,14 @@ class TestCSTCPServer(unittest.TestCase):
     def setUp(self):
         warnings.simplefilter('ignore', ResourceWarning)
         self.port = random.randint(20000, 30000)
-        self.server = CSTCPServer('localhost', self.port)
+        self.server = CushyTCPServer('localhost', self.port)
 
     def tearDown(self):
         if self.server.is_running and self.server.clients:
             self.server.close()
 
     def test_create_server(self):
-        self.assertIsInstance(self.server, CSTCPServer)
+        self.assertIsInstance(self.server, CushyTCPServer)
 
     def test_start_server(self):
         self.server.run()

@@ -24,11 +24,11 @@ from typing import List, Callable
 import socket
 import logging
 
-__all__ = ['CSTCPClient', 'CSTCPServer']
+__all__ = ['CushyTCPClient', 'CushyTCPServer']
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-class CSTCPClient:
+class CushyTCPClient:
     def __init__(self, host: str, port: int):
         self.logger = logging.getLogger(__name__)
         self.host = host
@@ -77,9 +77,9 @@ class CSTCPClient:
 
         example:
         ----------------------------------------------------------------------
-        from cushy_socket.tcp import CSTCPClient
+        from cushy_socket.tcp import CushyTCPClient
 
-        es_tcp_client = CSTCPClient(host='localhost', port=7777)
+        es_tcp_client = CushyTCPClient(host='localhost', port=7777)
         es_tcp_client.run()
 
 
@@ -99,7 +99,7 @@ class CSTCPClient:
         self.is_running = False
 
 
-class CSTCPServer:
+class CushyTCPServer:
     def __init__(self, host: str, port: int):
         self.logger = logging.getLogger(__name__)
         self.host = host
@@ -182,9 +182,9 @@ class CSTCPServer:
 
         example:
         ----------------------------------------------------------------------
-        from cushy_socket.tcp import CSTCPServer
+        from cushy_socket.tcp import CushyTCPServer
 
-        es_tcp_server = CSTCPServer(host='localhost', port=7777)
+        es_tcp_server = CushyTCPServer(host='localhost', port=7777)
         es_tcp_server.run()
 
 

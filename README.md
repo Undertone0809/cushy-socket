@@ -41,9 +41,9 @@ Here are some minimal example programs using the `cushy-socket`: a server that e
 
 ```python
 # echo tcp server program
-from cushy_socket.tcp import CSTCPServer
+from cushy_socket.tcp import CushyTCPServer
 
-es_tcp_server = CSTCPServer(host='localhost', port=7777)
+es_tcp_server = CushyTCPServer(host='localhost', port=7777)
 es_tcp_server.run()
 
 
@@ -55,9 +55,9 @@ def handle_msg_from_client(msg: str):
 
 ```python
 # echo tcp client program
-from cushy_socket.tcp import CSTCPClient
+from cushy_socket.tcp import CushyTCPClient
 
-es_tcp_client = CSTCPClient(host='localhost', port=7777)
+es_tcp_client = CushyTCPClient(host='localhost', port=7777)
 es_tcp_client.run()
 
 
@@ -72,6 +72,7 @@ es_tcp_client.send("hello, here is CSTCP client")
 
 
 # TODO
+- [ ] support for more lifecycle callbacks
 - [ ] optimize the handle of socket closing
 - [ ] optimize syntax expressions
 - [ ] add UDP server/client support

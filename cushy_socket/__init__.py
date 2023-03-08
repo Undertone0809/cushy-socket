@@ -14,7 +14,7 @@
 #
 # Copyright Owner: Zeeland
 # GitHub Link: https://github.com/Undertone0809/
+# Project Link: https://github.com/Undertone0809/cushy-socket
 # Contact Email: zeeland@foxmail.com
-
 
 from .tcp import *

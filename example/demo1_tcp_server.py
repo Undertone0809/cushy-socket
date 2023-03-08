@@ -14,11 +14,12 @@
 #
 # Copyright Owner: Zeeland
 # GitHub Link: https://github.com/Undertone0809/
+# Project Link: https://github.com/Undertone0809/cushy-socket
 # Contact Email: zeeland@foxmail.com
 
-from cushy_socket.tcp import CSTCPServer
+from cushy_socket.tcp import CushyTCPServer
 
-es_tcp_server = CSTCPServer(host='localhost', port=7777)
+es_tcp_server = CushyTCPServer(host='localhost', port=7777)
 es_tcp_server.run()
 
 
