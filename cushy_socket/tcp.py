@@ -20,22 +20,29 @@
 
 from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Callable
+from typing import List, Callable, Optional
 import socket
 import logging
 
 __all__ = ['CushyTCPClient', 'CushyTCPServer']
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+enable_log = False
+if enable_log:
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class CushyTCPClient:
     def __init__(self, host: str, port: int):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logger
         self.host = host
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.callbacks: List[Callable] = []
         self.is_running = False
+        self.executor = ThreadPoolExecutor()
+        self._callbacks: List[Callable] = []
+        self._disconnected_callback: Optional[Callable] = None
+        self._connected_callback: Optional[Callable] = None
 
     def run(self):
         """
@@ -43,7 +50,26 @@ class CushyTCPClient:
         """
         self.sock.connect((self.host, self.port))
         self.is_running = True
+        if self._connected_callback:
+            self.executor.submit(self._connected_callback)
         Thread(target=self._recv_thread).start()
+
+    def _recv_thread(self):
+        while True:
+            try:
+                msg = self.sock.recv(1024).decode('utf-8')
+            except Exception as e:
+                self.logger.error(f"[easy-socket] Error when receiving msg from server: {e}")
+                break
+            if not msg:
+                self.logger.error("[easy-socket] Server connection closed.")
+                break
+            self.logger.debug(f"[easy-socket] Received msg from server: {msg}")
+            for callback in self._callbacks:
+                self.executor.submit(callback, msg)
+
+        if self._disconnected_callback:
+            self.executor.submit(self._disconnected_callback)
 
     def send(self, msg: str or bytes):
         if type(msg) == str:
@@ -56,19 +82,8 @@ class CushyTCPClient:
     def _send(self, msg: bytes):
         self.sock.sendall(msg)
 
-    def _recv_thread(self):
-        while True:
-            msg = self.sock.recv(1024).decode('utf-8')
-            if not msg:
-                self.logger.error("[cushy-socket] Server connection closed.")
-                break
-            self.logger.info(f"[cushy-socket] Received msg from server: {msg}")
-
-            for callback in self.callbacks:
-                callback(msg)
-
     def listen(self, callback: Callable):
-        self.callbacks.append(callback)
+        self._callbacks.append(callback)
 
     def on_message(self):
         """
@@ -79,37 +94,54 @@ class CushyTCPClient:
         ----------------------------------------------------------------------
         from cushy_socket.tcp import CushyTCPClient
 
-        es_tcp_client = CushyTCPClient(host='localhost', port=7777)
-        es_tcp_client.run()
+        cushy_tcp_client = CushyTCPClient(host='localhost', port=7777)
+        cushy_tcp_client.run()
 
 
-        @es_tcp_client.on_message()
+        @cushy_tcp_client.on_message()
         def handle_msg_from_server(msg: str):
-            print(f"[client decorator callback] es_tcp_client rec msg: {msg}")
+            print(f"[client decorator callback] cushy_tcp_client rec msg: {msg}")
         ----------------------------------------------------------------------
         """
+
         def decorator(func):
-            self.callbacks.append(func)
+            self._callbacks.append(func)
+            return func
+
+        return decorator
+
+    def on_connected(self):
+        def decorator(func):
+            self._connected_callback = func
+            return func
+
+        return decorator
+
+    def on_disconnected(self):
+        def decorator(func):
+            self._disconnected_callback = func
             return func
 
         return decorator
 
     def close(self):
+        self.sock.shutdown(2)
         self.sock.close()
         self.is_running = False
 
 
 class CushyTCPServer:
     def __init__(self, host: str, port: int):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logger
         self.host = host
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.clients = set()
-        self.callbacks: List[Callable] = []
         self.is_running = False
         self.executor = ThreadPoolExecutor()
+        self._callbacks: List[Callable] = []
+        self._disconnected_callback: Optional[Callable] = None
+        self._connected_callback: Optional[Callable] = None
 
     def run(self):
         """
@@ -118,14 +150,15 @@ class CushyTCPServer:
         self.sock.bind((self.host, self.port))
         self.sock.listen()
         self.is_running = True
-        # self.executor.submit(self._accept_thread)
         Thread(target=self._accept_thread).start()
 
     def _accept_thread(self):
         while True:
             client_sock, client_addr = self.sock.accept()
-            self.logger.info(f"[cushy-socket] New client connected: {client_addr}")
+            self.logger.debug(f"[cushy-socket] New client connected: {client_addr}")
             self.clients.add(client_sock)
+            if self._connected_callback:
+                self.executor.submit(self._connected_callback, client_sock)
             self.executor.submit(self._recv_thread, client_sock)
 
     def _recv_thread(self, sock: socket.socket):
@@ -138,17 +171,20 @@ class CushyTCPServer:
             try:
                 msg = sock.recv(1024).decode('utf-8')
             except Exception as e:
-                self.logger.error(f"[cushy-socket] Error when receiving msg from client: {e}")
-                self.clients.remove(sock)
-                sock.close()
+                self._client_close(sock, 'error', f"[cushy-socket] Error when receiving msg from client: {e}")
                 break
             if not msg:
-                self.logger.info("[cushy-socket] Client connection closed.")
-                self.clients.remove(sock)
-                sock.close()
+                self._client_close(sock, 'info', "[cushy-socket] Client connection closed.")
                 break
-            self.logger.info(f"[cushy-socket] Received msg from client: {msg}")
+            self.logger.debug(f"[cushy-socket] Received msg from client: {msg}")
             self.executor.submit(self._callback_thread, msg)
+
+    def _client_close(self, sock: socket.socket, log_type: str, log_msg: str):
+        self.logger.debug(log_msg) if log_type == 'info' else self.logger.debug(log_msg)
+        if self._disconnected_callback:
+            self.executor.submit(self._disconnected_callback, sock)
+        self.clients.remove(sock)
+        sock.close()
 
     def send(self, msg: str or bytes, sock: socket.socket = None):
         """
@@ -169,11 +205,11 @@ class CushyTCPServer:
             raise Exception("Incorrect data type")
 
     def _callback_thread(self, msg: str):
-        for callback in self.callbacks:
-            callback(msg)
+        for callback in self._callbacks:
+            self.executor.submit(callback, msg)
 
     def listen(self, callback: Callable):
-        self.callbacks.append(callback)
+        self._callbacks.append(callback)
 
     def on_message(self):
         """
@@ -184,18 +220,33 @@ class CushyTCPServer:
         ----------------------------------------------------------------------
         from cushy_socket.tcp import CushyTCPServer
 
-        es_tcp_server = CushyTCPServer(host='localhost', port=7777)
-        es_tcp_server.run()
+        cushy_tcp_server = CushyTCPServer(host='localhost', port=7777)
+        cushy_tcp_server.run()
 
 
-        @es_tcp_server.on_message()
+        @cushy_tcp_server.on_message()
         def handle_msg_from_client(msg: str):
-            print(f"[server decorator callback] es_tcp_server rec msg: {msg}")
-            es_tcp_server.send("hello, I am server")
+            print(f"[server decorator callback] cushy_tcp_server rec msg: {msg}")
+            cushy_tcp_server.send("hello, I am server")
         ----------------------------------------------------------------------
         """
+
         def decorator(func):
-            self.callbacks.append(func)
+            self._callbacks.append(func)
+            return func
+
+        return decorator
+
+    def on_connected(self):
+        def decorator(func):
+            self._connected_callback = func
+            return func
+
+        return decorator
+
+    def on_disconnected(self):
+        def decorator(func):
+            self._disconnected_callback = func
             return func
 
         return decorator

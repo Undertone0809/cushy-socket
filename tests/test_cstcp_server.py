@@ -112,6 +112,11 @@ class TestCSTCPServer(unittest.TestCase):
         self.assertEqual(received_data, ['hello'])
         client_socket.close()
 
+    def test_on_connected(self):
+        pass
+
+    def test_on_disconnected(self):
+        pass
 
 if __name__ == '__main__':
     unittest.main()

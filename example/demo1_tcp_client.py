@@ -19,13 +19,24 @@
 
 from cushy_socket.tcp import CushyTCPClient
 
-es_tcp_client = CushyTCPClient(host='localhost', port=7777)
-es_tcp_client.run()
+cushy_tcp_client = CushyTCPClient(host='localhost', port=7777)
+cushy_tcp_client.run()
 
 
-@es_tcp_client.on_message()
+@cushy_tcp_client.on_connected()
+def handle_on_connected():
+    print(f"[client decorator callback] connect to server.")
+
+
+@cushy_tcp_client.on_disconnected()
+def handle_on_disconnected():
+    print(f"[client decorator callback] server disconnected.")
+
+
+@cushy_tcp_client.on_message()
 def handle_msg_from_server(msg: str):
-    print(f"[client decorator callback] es_tcp_client rec msg: {msg}")
+    print(f"[client decorator callback] cushy_tcp_client rec msg: {msg}")
 
 
-es_tcp_client.send("hello, here is CSTCP client")
+cushy_tcp_client.send("hello, here is CSTCP client")
+cushy_tcp_client.close()

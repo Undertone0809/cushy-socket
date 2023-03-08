@@ -41,32 +41,59 @@ Here are some minimal example programs using the `cushy-socket`: a server that e
 
 ```python
 # echo tcp server program
+import socket
 from cushy_socket.tcp import CushyTCPServer
 
-es_tcp_server = CushyTCPServer(host='localhost', port=7777)
-es_tcp_server.run()
+cushy_tcp_server = CushyTCPServer(host='localhost', port=7777)
+cushy_tcp_server.run()
 
 
-@es_tcp_server.on_message()
+@cushy_tcp_server.on_connected()
+def handle_on_connected(sock: socket.socket):
+    print(f"[server decorator callback] new client connected.")
+    print(sock)
+
+
+@cushy_tcp_server.on_disconnected()
+def handle_on_disconnected(sock: socket.socket):
+    print(f"[server decorator callback] a client disconnected.")
+    print(sock)
+
+
+@cushy_tcp_server.on_message()
 def handle_msg_from_client(msg: str):
-    print(f"[server decorator callback] es_tcp_server rec msg: {msg}")
-    es_tcp_server.send("hello, I am server")
+    print(f"[server decorator callback] cushy_tcp_server rec msg: {msg}")
+    cushy_tcp_server.send("hello, I am server")
+
+
 ```
 
 ```python
 # echo tcp client program
 from cushy_socket.tcp import CushyTCPClient
 
-es_tcp_client = CushyTCPClient(host='localhost', port=7777)
-es_tcp_client.run()
+cushy_tcp_client = CushyTCPClient(host='localhost', port=7777)
+cushy_tcp_client.run()
 
 
-@es_tcp_client.on_message()
+@cushy_tcp_client.on_connected()
+def handle_on_connected():
+    print(f"[client decorator callback] connect to server.")
+
+
+@cushy_tcp_client.on_disconnected()
+def handle_on_disconnected():
+    print(f"[client decorator callback] server disconnected.")
+
+
+@cushy_tcp_client.on_message()
 def handle_msg_from_server(msg: str):
-    print(f"[client decorator callback] es_tcp_client rec msg: {msg}")
+    print(f"[client decorator callback] cushy_tcp_client rec msg: {msg}")
 
 
-es_tcp_client.send("hello, here is CSTCP client")
+cushy_tcp_client.send("hello, here is CSTCP client")
+cushy_tcp_client.close()
+
 ```
 
 

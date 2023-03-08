@@ -17,13 +17,26 @@
 # Project Link: https://github.com/Undertone0809/cushy-socket
 # Contact Email: zeeland@foxmail.com
 
+import socket
 from cushy_socket.tcp import CushyTCPServer
 
-es_tcp_server = CushyTCPServer(host='localhost', port=7777)
-es_tcp_server.run()
+cushy_tcp_server = CushyTCPServer(host='localhost', port=7777)
+cushy_tcp_server.run()
 
 
-@es_tcp_server.on_message()
+@cushy_tcp_server.on_connected()
+def handle_on_connected(sock: socket.socket):
+    print(f"[server decorator callback] new client connected.")
+    print(sock)
+
+
+@cushy_tcp_server.on_disconnected()
+def handle_on_disconnected(sock: socket.socket):
+    print(f"[server decorator callback] a client disconnected.")
+    print(sock)
+
+
+@cushy_tcp_server.on_message()
 def handle_msg_from_client(msg: str):
-    print(f"[server decorator callback] es_tcp_server rec msg: {msg}")
-    es_tcp_server.send("hello, I am server")
+    print(f"[server decorator callback] cushy_tcp_server rec msg: {msg}")
+    cushy_tcp_server.send("hello, I am server")
