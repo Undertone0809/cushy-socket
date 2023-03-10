@@ -9,9 +9,6 @@
     <a target="_blank" href="">
         <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg?label=license" />
     </a>
-   <a target="_blank" href=''>
-        <img src="https://img.shields.io/github/stars/Undertone0809/cushy-socket.svg" alt="github stars"/>
-   </a>
     <a target="_blank" href=''>
         <img src="https://static.pepy.tech/personalized-badge/broadcast-service?period=total&units=international_system&left_color=grey&right_color=blue&left_text=Downloads/Total"/>
    </a>

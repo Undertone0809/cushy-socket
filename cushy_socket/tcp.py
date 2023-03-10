@@ -18,21 +18,42 @@
 # Contact Email: zeeland@foxmail.com
 
 
+import socket
+import logging
+import itertools
 from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Callable, Optional
-import socket
-import logging
 
-__all__ = ['CushyTCPClient', 'CushyTCPServer']
+__all__ = ['CushyTCPClient', 'CushyTCPServer', 'enable_log']
 logger = logging.getLogger(__name__)
 
-enable_log = False
-if enable_log:
+
+def enable_log():
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class CushyTCPClient:
+    """
+    Simplify the operation of socket. You can build a socket program easily.
+
+
+    example:
+        ----------------------------------------------------------------------
+        from cushy_socket.tcp import CushyTCPClient
+
+        cushy_tcp_client = CushyTCPClient(host='localhost', port=7777)
+        cushy_tcp_client.run()
+
+
+        @cushy_tcp_client.on_message()
+        def handle_msg_from_server(msg: str):
+            print(f"[client decorator callback] cushy_tcp_client rec msg: {msg}")
+        ----------------------------------------------------------------------
+    """
+    # Used to assign unique socket names
+    _counter = itertools.count().__next__
+
     def __init__(self, host: str, port: int):
         self.logger = logger
         self.host = host
@@ -43,6 +64,7 @@ class CushyTCPClient:
         self._callbacks: List[Callable] = []
         self._disconnected_callback: Optional[Callable] = None
         self._connected_callback: Optional[Callable] = None
+        self._socket_name_prefix = f"CushyTCPClient-{self._counter()}"
 
     def run(self):
         """
@@ -87,21 +109,7 @@ class CushyTCPClient:
 
     def on_message(self):
         """
-        listen socket message using decorator. You can build a listen callback
-        program easily.
-
-        example:
-        ----------------------------------------------------------------------
-        from cushy_socket.tcp import CushyTCPClient
-
-        cushy_tcp_client = CushyTCPClient(host='localhost', port=7777)
-        cushy_tcp_client.run()
-
-
-        @cushy_tcp_client.on_message()
-        def handle_msg_from_server(msg: str):
-            print(f"[client decorator callback] cushy_tcp_client rec msg: {msg}")
-        ----------------------------------------------------------------------
+        listen socket message using decorator.
         """
 
         def decorator(func):
@@ -131,6 +139,27 @@ class CushyTCPClient:
 
 
 class CushyTCPServer:
+    """
+    Simplify the operation of socket. You can build a socket program easily.
+
+
+    example:
+    ----------------------------------------------------------------------
+    from cushy_socket.tcp import CushyTCPServer
+
+    cushy_tcp_server = CushyTCPServer(host='localhost', port=7777)
+    cushy_tcp_server.run()
+
+
+    @cushy_tcp_server.on_message()
+    def handle_msg_from_client(msg: str):
+        print(f"[server decorator callback] cushy_tcp_server rec msg: {msg}")
+        cushy_tcp_server.send("hello, I am server")
+    ----------------------------------------------------------------------
+    """
+    # Used to assign unique socket names
+    _counter = itertools.count().__next__
+
     def __init__(self, host: str, port: int):
         self.logger = logger
         self.host = host
@@ -142,6 +171,7 @@ class CushyTCPServer:
         self._callbacks: List[Callable] = []
         self._disconnected_callback: Optional[Callable] = None
         self._connected_callback: Optional[Callable] = None
+        self._socket_name_prefix = f"CushyTCPClient-{self._counter()}"
 
     def run(self):
         """
@@ -213,22 +243,7 @@ class CushyTCPServer:
 
     def on_message(self):
         """
-        listen socket message using decorator. You can build a listen callback
-        program easily.
-
-        example:
-        ----------------------------------------------------------------------
-        from cushy_socket.tcp import CushyTCPServer
-
-        cushy_tcp_server = CushyTCPServer(host='localhost', port=7777)
-        cushy_tcp_server.run()
-
-
-        @cushy_tcp_server.on_message()
-        def handle_msg_from_client(msg: str):
-            print(f"[server decorator callback] cushy_tcp_server rec msg: {msg}")
-            cushy_tcp_server.send("hello, I am server")
-        ----------------------------------------------------------------------
+        listen socket message using decorator.
         """
 
         def decorator(func):
