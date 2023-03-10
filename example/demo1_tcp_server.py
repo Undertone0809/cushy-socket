@@ -37,6 +37,6 @@ def handle_on_disconnected(sock: socket.socket):
 
 
 @cushy_tcp_server.on_message()
-def handle_msg_from_client(msg: str):
+def handle_msg_from_client(msg: str, socket: socket.socket):
     print(f"[server decorator callback] cushy_tcp_server rec msg: {msg}")
     cushy_tcp_server.send("hello, I am server")

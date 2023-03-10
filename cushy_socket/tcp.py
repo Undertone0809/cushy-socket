@@ -60,7 +60,7 @@ class CushyTCPClient:
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.is_running = False
-        self.executor = ThreadPoolExecutor()
+        self._executor = ThreadPoolExecutor()
         self._callbacks: List[Callable] = []
         self._disconnected_callback: Optional[Callable] = None
         self._connected_callback: Optional[Callable] = None
@@ -73,7 +73,7 @@ class CushyTCPClient:
         self.sock.connect((self.host, self.port))
         self.is_running = True
         if self._connected_callback:
-            self.executor.submit(self._connected_callback)
+            self._executor.submit(self._connected_callback)
         Thread(target=self._recv_thread).start()
 
     def _recv_thread(self):
@@ -88,10 +88,10 @@ class CushyTCPClient:
                 break
             self.logger.debug(f"[easy-socket] Received msg from server: {msg}")
             for callback in self._callbacks:
-                self.executor.submit(callback, msg)
+                self._executor.submit(callback, msg)
 
         if self._disconnected_callback:
-            self.executor.submit(self._disconnected_callback)
+            self._executor.submit(self._disconnected_callback)
 
     def send(self, msg: str or bytes):
         if type(msg) == str:
@@ -167,7 +167,7 @@ class CushyTCPServer:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.clients = set()
         self.is_running = False
-        self.executor = ThreadPoolExecutor()
+        self._executor = ThreadPoolExecutor()
         self._callbacks: List[Callable] = []
         self._disconnected_callback: Optional[Callable] = None
         self._connected_callback: Optional[Callable] = None
@@ -188,8 +188,8 @@ class CushyTCPServer:
             self.logger.debug(f"[cushy-socket] New client connected: {client_addr}")
             self.clients.add(client_sock)
             if self._connected_callback:
-                self.executor.submit(self._connected_callback, client_sock)
-            self.executor.submit(self._recv_thread, client_sock)
+                self._executor.submit(self._connected_callback, client_sock)
+            self._executor.submit(self._recv_thread, client_sock)
 
     def _recv_thread(self, sock: socket.socket):
         """
@@ -207,12 +207,12 @@ class CushyTCPServer:
                 self._client_close(sock, 'info', "[cushy-socket] Client connection closed.")
                 break
             self.logger.debug(f"[cushy-socket] Received msg from client: {msg}")
-            self.executor.submit(self._callback_thread, msg)
+            self._executor.submit(self._invoke_callback, msg, sock)
 
     def _client_close(self, sock: socket.socket, log_type: str, log_msg: str):
         self.logger.debug(log_msg) if log_type == 'info' else self.logger.debug(log_msg)
         if self._disconnected_callback:
-            self.executor.submit(self._disconnected_callback, sock)
+            self._executor.submit(self._disconnected_callback, sock)
         self.clients.remove(sock)
         sock.close()
 
@@ -234,9 +234,9 @@ class CushyTCPServer:
         else:
             raise Exception("Incorrect data type")
 
-    def _callback_thread(self, msg: str):
+    def _invoke_callback(self, msg: str, socket: socket.socket):
         for callback in self._callbacks:
-            self.executor.submit(callback, msg)
+            self._executor.submit(callback, msg, socket)
 
     def listen(self, callback: Callable):
         self._callbacks.append(callback)
