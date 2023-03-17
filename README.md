@@ -13,7 +13,7 @@
         <img src="https://static.pepy.tech/personalized-badge/broadcast-service?period=total&units=international_system&left_color=grey&right_color=blue&left_text=Downloads/Total"/>
    </a>
     <a target="_blank" href=''>
-        <img src="https://static.pepy.tech/personalized-badge/broadcast-service?period=month&units=international_system&left_color=grey&right_color=blue&left_text=Downloads/Week"/>
+        <img src="https://static.pepy.tech/personalized-badge/cushy-socket?period=month&units=international_system&left_color=grey&right_color=blue&left_text=Downloads/Week"/>
    </a>
 </p>
 
@@ -97,13 +97,18 @@ cushy_tcp_client.close()
 # TODO
 - [ ] support for more lifecycle callbacks
 - [ ] optimize the handle of socket closing
-- [ ] optimize syntax expressions
 - [ ] add UDP server/client support
-- [ ] provide more solutions
 - [ ] provide more async supports
 - [ ] provide more decorator support
 - [ ] optimize unittest
 - [ ] send and listen topic message
+- [ ] Add support for SSL/TLS encryption for secure communication.
+- [ ] Implement timeout functionality for sending and receiving messages to prevent the blocking of threads.
+- [ ] Add support for IPv6 addresses for clients and servers.
+- [ ] Implement support for multicast sockets.
+- [ ] Allow for the customization of the buffer size used for sending and receiving messages.
+- [ ] Implement a mechanism for handling exceptions in the background threads to prevent the entire program from crashing.
+- [ ] Provide support for advanced features such as non-blocking sockets, multi-threaded server, and asynchronous I/O using asyncio or Twisted.
 
 # Contribution
 If you want to contribute to this project, you can submit pr or issue. I am glad to see more people involved and optimize it.
